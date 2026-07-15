@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { supabase, initialAuthLinkType } from '../lib/supabase'
 
 interface AuthContextValue {
   /** null tant que Supabase n'est pas configuré ou que personne n'est connecté */
@@ -10,9 +10,12 @@ interface AuthContextValue {
   loading: boolean
   /** false si les variables Supabase ne sont pas définies : mode local sans compte */
   enabled: boolean
+  /** true si l'utilisateur arrive via un lien d'invitation ou de réinitialisation : il doit choisir un mot de passe */
+  needsPassword: boolean
   signIn: (email: string, password: string) => Promise<string | null>
-  signUp: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<string | null>
+  updatePassword: (password: string) => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -31,6 +34,9 @@ function frenchAuthError(message: string): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(supabase !== null)
+  const [needsPassword, setNeedsPassword] = useState(
+    initialAuthLinkType === 'invite' || initialAuthLinkType === 'recovery',
+  )
 
   useEffect(() => {
     if (!supabase) return
@@ -49,21 +55,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       enabled: supabase !== null,
+      needsPassword,
       signIn: async (email, password) => {
         if (!supabase) return 'Supabase non configuré.'
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         return error ? frenchAuthError(error.message) : null
       },
-      signUp: async (email, password) => {
-        if (!supabase) return 'Supabase non configuré.'
-        const { error } = await supabase.auth.signUp({ email, password })
-        return error ? frenchAuthError(error.message) : null
-      },
       signOut: async () => {
         await supabase?.auth.signOut()
       },
+      resetPassword: async (email) => {
+        if (!supabase) return 'Supabase non configuré.'
+        const { error } = await supabase.auth.resetPasswordForEmail(email)
+        return error ? frenchAuthError(error.message) : null
+      },
+      updatePassword: async (password) => {
+        if (!supabase) return 'Supabase non configuré.'
+        const { error } = await supabase.auth.updateUser({ password })
+        if (error) return frenchAuthError(error.message)
+        setNeedsPassword(false)
+        return null
+      },
     }),
-    [session, loading],
+    [session, loading, needsPassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

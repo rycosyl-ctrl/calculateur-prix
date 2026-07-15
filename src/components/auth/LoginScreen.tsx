@@ -2,9 +2,11 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 
+const inputClass =
+  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+
 export function LoginScreen() {
-  const { signIn, signUp } = useAuth()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const { signIn, resetPassword } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -17,36 +19,39 @@ export function LoginScreen() {
     setInfo(null)
     setBusy(true)
     try {
-      if (mode === 'signin') {
-        const err = await signIn(email, password)
-        if (err) setError(err)
+      const err = await signIn(email, password)
+      if (err) setError(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onForgotPassword = async () => {
+    setError(null)
+    setInfo(null)
+    if (!email) {
+      setError('Saisissez d’abord votre email, puis cliquez à nouveau sur « Mot de passe oublié ».')
+      return
+    }
+    setBusy(true)
+    try {
+      const err = await resetPassword(email)
+      if (err) {
+        setError(err)
       } else {
-        const err = await signUp(email, password)
-        if (err) {
-          setError(err)
-        } else {
-          setInfo(
-            'Compte créé. Si la confirmation par email est activée, cliquez sur le lien reçu avant de vous connecter.',
-          )
-          setMode('signin')
-        }
+        setInfo('Email envoyé : cliquez sur le lien reçu pour choisir un nouveau mot de passe.')
       }
     } finally {
       setBusy(false)
     }
   }
 
-  const inputClass =
-    'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="text-lg font-bold tracking-tight text-slate-900">Calculateur de prix</h1>
         <p className="mt-1 text-xs text-slate-500">
-          {mode === 'signin'
-            ? 'Connectez-vous pour retrouver vos calculs.'
-            : 'Créez votre compte pour sauvegarder vos calculs.'}
+          Accès sur invitation. Connectez-vous pour retrouver vos calculs.
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -66,8 +71,7 @@ export function LoginScreen() {
             <input
               type="password"
               required
-              minLength={6}
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={inputClass}
@@ -82,21 +86,22 @@ export function LoginScreen() {
             disabled={busy}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
           >
-            {busy ? 'Patientez…' : mode === 'signin' ? 'Se connecter' : 'Créer le compte'}
+            {busy ? 'Patientez…' : 'Se connecter'}
           </button>
         </form>
 
         <button
           type="button"
-          onClick={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin')
-            setError(null)
-            setInfo(null)
-          }}
-          className="mt-4 w-full text-center text-xs text-indigo-600 hover:underline"
+          onClick={onForgotPassword}
+          disabled={busy}
+          className="mt-4 w-full text-center text-xs text-indigo-600 hover:underline disabled:opacity-50"
         >
-          {mode === 'signin' ? 'Pas encore de compte ? Créer un compte' : 'Déjà un compte ? Se connecter'}
+          Mot de passe oublié ?
         </button>
+
+        <p className="mt-4 text-center text-[11px] text-slate-400">
+          Pas de compte ? Demandez une invitation au responsable de l’outil.
+        </p>
       </div>
     </div>
   )

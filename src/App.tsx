@@ -4,6 +4,7 @@ import { AppStateProvider, useAppState } from './state/AppStateContext'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { Header } from './components/layout/Header'
 import { LoginScreen } from './components/auth/LoginScreen'
+import { SetPasswordScreen } from './components/auth/SetPasswordScreen'
 import { GlobalParamsPanel } from './components/panels/GlobalParamsPanel'
 import { OverfillTablePanel } from './components/panels/OverfillTablePanel'
 import { VariantsTablePanel } from './components/panels/VariantsTablePanel'
@@ -37,7 +38,7 @@ function Workspace() {
 }
 
 function Gate() {
-  const { session, loading, enabled } = useAuth()
+  const { session, loading, enabled, needsPassword } = useAuth()
 
   // Supabase non configuré : mode local sans compte (utile en développement)
   if (!enabled) {
@@ -57,6 +58,8 @@ function Gate() {
   }
 
   if (!session) return <LoginScreen />
+
+  if (needsPassword) return <SetPasswordScreen />
 
   return (
     <AppStateProvider key={session.user.id} userId={session.user.id}>
