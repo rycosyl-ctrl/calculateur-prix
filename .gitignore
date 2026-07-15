@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# variables d'environnement locales (clés Supabase de dev)
+.env.local
+.env*.local

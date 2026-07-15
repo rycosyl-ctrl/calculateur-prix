@@ -2,7 +2,12 @@ import { z } from 'zod'
 import type { AppConfig } from '../engine/types'
 import { CURRENT_SCHEMA_VERSION, defaultConfig } from './defaultState'
 
-export const STORAGE_KEY = 'bulk-pricing-app:config'
+const STORAGE_KEY_BASE = 'bulk-pricing-app:config'
+
+/** Clé localStorage par utilisateur, pour ne pas mélanger les configs sur un poste partagé. */
+export function storageKey(userId: string | null): string {
+  return userId ? `${STORAGE_KEY_BASE}:${userId}` : STORAGE_KEY_BASE
+}
 
 const OverfillRuleSchema = z.object({
   id: z.string(),
@@ -31,16 +36,16 @@ const AppConfigSchema = z.object({
   variants: z.array(VariantSchema),
 })
 
-function migrateConfig(data: unknown): AppConfig {
+export function migrateConfig(data: unknown): AppConfig {
   // Futures migrations : if ((data as any)?.schemaVersion < 2) data = migrateV1toV2(data)
   const result = AppConfigSchema.safeParse(data)
   if (!result.success) return defaultConfig()
   return { ...result.data, schemaVersion: CURRENT_SCHEMA_VERSION }
 }
 
-export function loadConfig(): AppConfig {
+export function loadConfig(userId: string | null = null): AppConfig {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(storageKey(userId))
     if (!raw) return defaultConfig()
     return migrateConfig(JSON.parse(raw))
   } catch {
@@ -48,9 +53,9 @@ export function loadConfig(): AppConfig {
   }
 }
 
-export function saveConfig(config: AppConfig): void {
+export function saveConfig(config: AppConfig, userId: string | null = null): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+    localStorage.setItem(storageKey(userId), JSON.stringify(config))
   } catch {
     // stockage plein ou indisponible : on ignore, l'app reste utilisable en mémoire
   }

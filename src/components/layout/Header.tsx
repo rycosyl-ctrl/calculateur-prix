@@ -1,9 +1,11 @@
 import { useRef } from 'react'
 import { useAppState } from '../../state/AppStateContext'
 import { parseImportedConfig } from '../../state/schema'
+import { useAuth } from '../../auth/AuthContext'
 
 export function Header() {
   const { config, dispatch } = useAppState()
+  const { session, enabled, signOut } = useAuth()
   const fileInput = useRef<HTMLInputElement>(null)
 
   const exportJson = () => {
@@ -73,6 +75,18 @@ export function Header() {
           >
             Réinitialiser
           </button>
+          {enabled && session && (
+            <div className="ml-2 flex items-center gap-2 border-l border-slate-200 pl-3">
+              <span className="hidden text-slate-500 sm:inline">{session.user.email}</span>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Déconnexion
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react'
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AppConfig, GlobalParams, OverfillRule, Variant } from '../engine/types'
 import { defaultConfig, newId } from './defaultState'
 import { loadConfig, saveConfig } from './schema'
+import { fetchRemoteConfig, upsertRemoteConfig } from './remoteConfig'
 
 export type Action =
   | { type: 'SET_GLOBAL_PARAM'; patch: Partial<GlobalParams> }
@@ -65,24 +66,54 @@ function reducer(state: AppConfig, action: Action): AppConfig {
 interface AppStateContextValue {
   config: AppConfig
   dispatch: React.Dispatch<Action>
+  /** true tant que la config distante n'a pas été chargée (utilisateur connecté uniquement) */
+  syncing: boolean
 }
 
 const AppStateContext = createContext<AppStateContextValue | null>(null)
 
-export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [config, dispatch] = useReducer(reducer, undefined, loadConfig)
+export function AppStateProvider({
+  userId = null,
+  children,
+}: {
+  userId?: string | null
+  children: ReactNode
+}) {
+  const [config, dispatch] = useReducer(reducer, userId, loadConfig)
+  // Connecté : on attend la config distante avant d'autoriser les sauvegardes,
+  // pour ne pas écraser la base avec les valeurs par défaut locales.
+  const [hydrated, setHydrated] = useState(userId === null)
 
-  // sauvegarde débouncée en localStorage
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    fetchRemoteConfig(userId).then((remote) => {
+      if (cancelled) return
+      if (remote) dispatch({ type: 'IMPORT_CONFIG', config: remote })
+      setHydrated(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
+    if (!hydrated) return
     if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => saveConfig(config), 300)
+    timer.current = setTimeout(() => {
+      saveConfig(config, userId)
+      if (userId) upsertRemoteConfig(userId, config)
+    }, 300)
     return () => {
       if (timer.current) clearTimeout(timer.current)
     }
-  }, [config])
+  }, [config, hydrated, userId])
 
-  const value = useMemo(() => ({ config, dispatch }), [config])
+  const value = useMemo(
+    () => ({ config, dispatch, syncing: !hydrated }),
+    [config, hydrated],
+  )
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>
 }
 
