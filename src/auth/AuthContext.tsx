@@ -13,6 +13,7 @@ interface AuthContextValue {
   /** true si l'utilisateur arrive via un lien d'invitation ou de réinitialisation : il doit choisir un mot de passe */
   needsPassword: boolean
   signIn: (email: string, password: string) => Promise<string | null>
+  signUp: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<string | null>
   updatePassword: (password: string) => Promise<string | null>
@@ -59,6 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn: async (email, password) => {
         if (!supabase) return 'Supabase non configuré.'
         const { error } = await supabase.auth.signInWithPassword({ email, password })
+        return error ? frenchAuthError(error.message) : null
+      },
+      signUp: async (email, password) => {
+        if (!supabase) return 'Supabase non configuré.'
+        const { error } = await supabase.auth.signUp({ email, password })
         return error ? frenchAuthError(error.message) : null
       },
       signOut: async () => {
