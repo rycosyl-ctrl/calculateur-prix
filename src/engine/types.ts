@@ -10,6 +10,8 @@ export interface OverfillRule {
 export interface Variant {
   id: string
   nominalWeightG: number
+  /** Variante Shopify liée (gid://shopify/ProductVariant/…) ; ignoré par le moteur de calcul */
+  shopifyVariantId?: string | null
 }
 
 export type GapMode = 'fixed' | 'percent'
@@ -29,11 +31,16 @@ export interface GlobalParams {
   referenceVariantId: string | null
 }
 
-export interface AppConfig {
-  schemaVersion: number
+/** Tout ce dont le moteur a besoin pour calculer les prix d'un produit. */
+export interface PricingInput {
   global: GlobalParams
   overfillRules: OverfillRule[]
   variants: Variant[]
+}
+
+/** Ancienne racine de configuration (schemaVersion 1) : conservée pour la migration. */
+export interface AppConfigV1 extends PricingInput {
+  schemaVersion: number
 }
 
 export interface VariantResult {

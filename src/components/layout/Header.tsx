@@ -1,15 +1,16 @@
 import { useRef } from 'react'
 import { useAppState } from '../../state/AppStateContext'
-import { parseImportedConfig } from '../../state/schema'
+import { parseImportedWorkspace } from '../../state/schema'
 import { useAuth } from '../../auth/AuthContext'
+import { ProductSwitcher } from './ProductSwitcher'
 
 export function Header() {
-  const { config, dispatch } = useAppState()
+  const { workspace, dispatch } = useAppState()
   const { session, enabled, signOut } = useAuth()
   const fileInput = useRef<HTMLInputElement>(null)
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(workspace, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -19,9 +20,9 @@ export function Header() {
   }
 
   const importJson = async (file: File) => {
-    const parsed = parseImportedConfig(await file.text())
+    const parsed = parseImportedWorkspace(await file.text())
     if (parsed) {
-      dispatch({ type: 'IMPORT_CONFIG', config: parsed })
+      dispatch({ type: 'IMPORT_WORKSPACE', workspace: parsed })
     } else {
       window.alert('Fichier invalide : la configuration n’a pas pu être importée.')
     }
@@ -29,14 +30,17 @@ export function Header() {
 
   return (
     <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">
-            Calculateur de prix
-          </h1>
-          <p className="text-xs text-slate-500">
-            Prix TTC par variante à partir du coût d'achat et du taux de marque
-          </p>
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-slate-900">
+              Calculateur de prix
+            </h1>
+            <p className="text-xs text-slate-500">
+              Prix TTC par variante à partir du coût d'achat et du taux de marque
+            </p>
+          </div>
+          <ProductSwitcher />
         </div>
         <div className="flex items-center gap-2 text-xs">
           <button
@@ -67,8 +71,12 @@ export function Header() {
           <button
             type="button"
             onClick={() => {
-              if (window.confirm('Réinitialiser tous les paramètres aux valeurs par défaut ?')) {
-                dispatch({ type: 'RESET_TO_DEFAULTS' })
+              if (
+                window.confirm(
+                  'Réinitialiser les paramètres de ce produit aux valeurs par défaut ?',
+                )
+              ) {
+                dispatch({ type: 'RESET_PRODUCT' })
               }
             }}
             className="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-medium text-red-600 transition hover:bg-red-50"

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { computeAll } from '../pipeline'
-import type { AppConfig, OverfillRule, Variant } from '../types'
+import type { AppConfigV1, OverfillRule, Variant } from '../types'
 
 const defaultRules: OverfillRule[] = [
   { id: 'r1', minG: 3, maxG: 50, extraG: 0.5 },
   { id: 'r2', minG: 100, maxG: null, extraG: 1 },
 ]
 
-function makeConfig(overrides?: Partial<AppConfig['global']>, variants?: Variant[]): AppConfig {
+function makeConfig(overrides?: Partial<AppConfigV1['global']>, variants?: Variant[]): AppConfigV1 {
   return {
     schemaVersion: 1,
     global: {

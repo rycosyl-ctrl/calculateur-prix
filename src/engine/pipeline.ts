@@ -1,4 +1,4 @@
-import type { AppConfig, PipelineIssue, PipelineResult, VariantResult } from './types'
+import type { PricingInput, PipelineIssue, PipelineResult, VariantResult } from './types'
 import { resolveOverfillExtraG } from './overfill'
 import { adjustedCostPerKg, realWeightG, variantCost } from './cost'
 import {
@@ -13,7 +13,7 @@ import { variantPriceTTC } from './variantPricing'
 import { isValidPromoPct, prixAvantPromo } from './promo'
 
 /** Point d'entrée unique du moteur : calcule tous les résultats à partir de la config. */
-export function computeAll(config: AppConfig): PipelineResult {
+export function computeAll(config: PricingInput): PipelineResult {
   const { global: g, variants, overfillRules } = config
   const issues: PipelineIssue[] = []
 

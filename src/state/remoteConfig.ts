@@ -1,9 +1,13 @@
 import { supabase } from '../lib/supabase'
-import type { AppConfig } from '../engine/types'
-import { migrateConfig } from './schema'
+import type { Workspace } from './workspace'
+import { migrateWorkspace } from './schema'
 
-/** Config de l'utilisateur en base, ou null s'il n'en a pas encore (premier login). */
-export async function fetchRemoteConfig(userId: string): Promise<AppConfig | null> {
+/**
+ * Espace de travail de l'utilisateur en base, ou null s'il n'en a pas encore.
+ * La colonne `config` contient l'ancienne config unique (v1) ou la nouvelle
+ * liste de produits (v2) : la migration s'occupe des deux.
+ */
+export async function fetchRemoteWorkspace(userId: string): Promise<Workspace | null> {
   if (!supabase) return null
   const { data, error } = await supabase
     .from('user_configs')
@@ -11,12 +15,12 @@ export async function fetchRemoteConfig(userId: string): Promise<AppConfig | nul
     .eq('user_id', userId)
     .maybeSingle()
   if (error || !data) return null
-  return migrateConfig(data.config)
+  return migrateWorkspace(data.config)
 }
 
-export async function upsertRemoteConfig(userId: string, config: AppConfig): Promise<void> {
+export async function upsertRemoteWorkspace(userId: string, workspace: Workspace): Promise<void> {
   if (!supabase) return
   await supabase
     .from('user_configs')
-    .upsert({ user_id: userId, config, updated_at: new Date().toISOString() })
+    .upsert({ user_id: userId, config: workspace, updated_at: new Date().toISOString() })
 }
