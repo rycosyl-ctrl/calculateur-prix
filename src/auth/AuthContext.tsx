@@ -14,6 +14,8 @@ interface AuthContextValue {
   needsPassword: boolean
   signIn: (email: string, password: string) => Promise<string | null>
   signUp: (email: string, password: string) => Promise<string | null>
+  /** Envoie un lien de connexion par email (connexion sans mot de passe) */
+  sendMagicLink: (email: string) => Promise<string | null>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<string | null>
   updatePassword: (password: string) => Promise<string | null>
@@ -65,6 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp: async (email, password) => {
         if (!supabase) return 'Supabase non configuré.'
         const { error } = await supabase.auth.signUp({ email, password })
+        return error ? frenchAuthError(error.message) : null
+      },
+      sendMagicLink: async (email) => {
+        if (!supabase) return 'Supabase non configuré.'
+        const { error } = await supabase.auth.signInWithOtp({ email })
         return error ? frenchAuthError(error.message) : null
       },
       signOut: async () => {

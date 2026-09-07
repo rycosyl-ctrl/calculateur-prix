@@ -6,7 +6,7 @@ const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
 
 export function LoginScreen() {
-  const { signIn, signUp, resetPassword } = useAuth()
+  const { signIn, signUp, resetPassword, sendMagicLink } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,6 +33,26 @@ export function LoginScreen() {
           )
           setMode('signin')
         }
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onMagicLink = async () => {
+    setError(null)
+    setInfo(null)
+    if (!email) {
+      setError('Saisissez votre email, puis cliquez à nouveau sur « Recevoir un lien ».')
+      return
+    }
+    setBusy(true)
+    try {
+      const err = await sendMagicLink(email)
+      if (err) {
+        setError(err)
+      } else {
+        setInfo('Lien envoyé ! Ouvrez l’email reçu et cliquez sur le lien pour vous connecter.')
       }
     } finally {
       setBusy(false)
@@ -107,6 +127,27 @@ export function LoginScreen() {
             {busy ? 'Patientez…' : mode === 'signin' ? 'Se connecter' : 'Créer le compte'}
           </button>
         </form>
+
+        {mode === 'signin' && (
+          <>
+            <div className="my-4 flex items-center gap-3 text-[11px] text-slate-400">
+              <span className="h-px flex-1 bg-slate-200" />
+              ou
+              <span className="h-px flex-1 bg-slate-200" />
+            </div>
+            <button
+              type="button"
+              onClick={onMagicLink}
+              disabled={busy}
+              className="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+            >
+              Recevoir un lien de connexion par email
+            </button>
+            <p className="mt-1 text-center text-[11px] text-slate-400">
+              Sans mot de passe : saisissez votre email ci-dessus et cliquez ici.
+            </p>
+          </>
+        )}
 
         <div className="mt-4 space-y-2">
           <button
